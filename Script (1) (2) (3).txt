@@ -1,0 +1,2200 @@
+runMode = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes"):FindFirstChild("RunMode")
+superman = game:GetService("ReplicatedFirst"):FindFirstChild("Static"):FindFirstChild("Superman")
+prodStats = game:GetService("ReplicatedFirst"):FindFirstChild("Prod"):FindFirstChild("Stats")
+
+if runMode then
+    runMode:Destroy()
+end
+
+if superman then
+    superman:Destroy()
+end
+
+if prodStats then
+    prodStats:Destroy()
+end
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "ZCduker4's STFO Script",
+   Icon = 0, -- No icon
+   LoadingTitle = "Please Wait, Script Loading",
+   LoadingSubtitle = "by ZCduker4",
+   Theme = "Default",
+   DisableRayfieldPrompts = true,
+   DisableBuildWarnings = true,
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "stfo script configurations",
+      FileName = "Stfo Script Configs"
+   },
+   Discord = {
+      Enabled = true,
+      Invite = "yJ3Y6UQtBW", -- Replace with your Discord invite code
+      RememberJoins = false
+   },
+   KeySystem = false
+})
+
+local RunService = game:GetService("RunService")
+
+Rayfield:Notify({
+   Title = "Script Executed",
+   Content = "Your settings will be saved and restored next time.",
+   Duration = 5,
+   Image = 13047715178,
+   Actions = {
+      Ignore = {
+         Name = "Okay!",
+         Callback = function()
+            print("The user tapped Okay!")
+         end
+      }
+   }
+})
+local player = game.Players.LocalPlayer
+local tweenService = game:GetService("TweenService")
+local character = player.Character or player.CharacterAdded:Wait()
+local SwordTab = Window:CreateTab("Main", nil)
+local MainSection = SwordTab:CreateSection("Walkspeed")
+local player = game.Players.LocalPlayer
+local playerName = player.Name
+
+local player = game.Players.LocalPlayer
+local playerName = player.Name
+
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "Welcome " .. playerName,
+    Text = "Hope ur Having A Great one, Welcome..",
+    Icon = "rbxassetid://12317605127",
+    Duration = 2.5
+})
+
+tpwalkSpeed = 1.75 -- Default teleportation speed
+tpwalkEnabled = false -- Default state of TP Walk
+
+SwordTab:CreateSlider({
+    Name = "TP Walk Speed",
+    Range = {0, 30}, -- Speed range from 0 to 3
+    Increment = 1,
+    Suffix = " Speed",
+    CurrentValue = tpwalkSpeed, -- Default value
+    Callback = function(Value)
+        tpwalkSpeed = Value
+        print("TP Walk Speed set to:", tpwalkSpeed)
+    end,
+})
+
+SwordTab:CreateToggle({
+    Name = "TP Walk",
+    CurrentValue = false, -- Default off
+    Flag = "TPWalkToggle", -- Unique identifier
+    Callback = function(State)
+        tpwalkEnabled = State
+        print("TP Walk " .. (tpwalkEnabled and "Enabled" or "Disabled"))
+    end,
+})
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if tpwalkEnabled and tpwalkSpeed > 0 then
+    
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local root = character.HumanoidRootPart
+            local moveDirection = character.Humanoid.MoveDirection
+            if moveDirection.Magnitude > 0 then
+                root.CFrame = root.CFrame + moveDirection * tpwalkSpeed * 0.01 -- Smooth movement
+            end
+        end
+    end
+end)
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function()
+    tpwalkEnabled = false
+    print("TP Walk Disabled on respawn")
+end)
+
+local MainSection = SwordTab:CreateSection("Damage Multiplier")
+
+local isMultiplierEnabled = false -- Default state is OFF
+local damageMultiplier = 1 -- Default multiplier value
+
+local Slider = SwordTab:CreateSlider({
+    Name = "X Damage Multiplier",
+    Range = {0, 5}, -- Range from 0x to 4x
+    Increment = 1,
+    Suffix = "X",
+    CurrentValue = 1, -- Default multiplier
+    Flag = "DamageMultiplierSlider",
+    Callback = function(Value)
+        damageMultiplier = Value -- Update the multiplier value
+    end,
+})
+
+local Toggle = SwordTab:CreateToggle({
+    Name = "Enable Damage Multiplier",
+    CurrentValue = false, -- Default is OFF
+    Flag = "DamageMultiplierToggle",
+    Callback = function(State)
+        isMultiplierEnabled = State -- Update the toggle state
+        print("Damage multiplier is now", isMultiplierEnabled and "enabled" or "disabled")
+    end,
+})
+
+local function applyDamageMultiplier(tool)
+    local damageValue = tool:FindFirstChild("Damage")
+    if damageValue and damageValue:IsA("NumberValue") then
+        local baseDamage = damageValue.Value -- Original damage
+        if isMultiplierEnabled then
+            damageValue.Value = baseDamage * damageMultiplier -- Apply the multiplier
+        else
+            damageValue.Value = baseDamage -- Reset to base damage
+        end
+        print("Damage updated to:", damageValue.Value)
+    end
+end
+
+local tool = script.Parent
+if tool and tool:IsA("Tool") then
+    tool.Equipped:Connect(function()
+        applyDamageMultiplier(tool)
+    end)
+else
+    warn("This script must be placed under a Tool instance.")
+end
+
+
+local MainSection = SwordTab:CreateSection("Reach")
+
+
+
+getgenv().Reach = {
+    VizualizerColor = Color3.fromRGB(200, 0, 0),
+    StatColor = Color3.fromRGB(0, 150, 255)
+}
+
+local Players = game:GetService("Players")
+local Run = game:GetService("RunService")
+local Ws = game:GetService("Workspace")
+local Cam = Ws.CurrentCamera
+local Lp = Players.LocalPlayer
+
+local active, trueActive, vis = true, true, false
+local Rng, StatRng = 3.5, 10
+local drawBoxESP, highlightPlayers, showNameDistance = false, true, true
+
+local toolHL = Instance.new("Highlight")
+toolHL.FillTransparency, toolHL.OutlineTransparency, toolHL.Enabled = 0.75, 1, false
+toolHL.Parent = Lp:WaitForChild("PlayerGui")
+
+local plrHL, playerTexts, playerDistanceTexts, boxLines = {}, {}, {}, {}
+
+local function newText(color, size)
+    local t = Drawing.new("Text")
+    t.Visible, t.Center, t.Outline, t.Color, t.Size = false, true, true, color, size
+    return t
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= Lp then
+        local h = Instance.new("Highlight")
+        h.FillTransparency, h.OutlineTransparency, h.Enabled = 0.5, 0, false
+        h.Parent = Lp.PlayerGui
+        plrHL[p] = h
+        playerTexts[p] = newText(getgenv().Reach.VizualizerColor, 18)
+        playerDistanceTexts[p] = newText(getgenv().Reach.VizualizerColor, 15)
+    end
+end
+
+Players.PlayerAdded:Connect(function(p)
+    if p ~= Lp then
+        local h = Instance.new("Highlight")
+        h.FillTransparency, h.OutlineTransparency, h.Enabled = 0.5, 0, false
+        h.Parent = Lp.PlayerGui
+        plrHL[p] = h
+        playerTexts[p] = newText(getgenv().Reach.VizualizerColor, 18)
+        playerDistanceTexts[p] = newText(getgenv().Reach.VizualizerColor, 15)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if plrHL[p] then plrHL[p]:Destroy() plrHL[p] = nil end
+    if boxLines[p] then for _, l in ipairs(boxLines[p]) do l:Remove() end boxLines[p] = nil end
+    if playerTexts[p] then playerTexts[p]:Remove() playerTexts[p] = nil end
+    if playerDistanceTexts[p] then playerDistanceTexts[p]:Remove() playerDistanceTexts[p] = nil end
+end)
+
+local function newBox(p)
+    local t = {}
+    for i = 1, 4 do
+        local l = Drawing.new("Line")
+        l.Thickness, l.Transparency, l.Visible = 1, 0.60, false
+        t[i] = l
+    end
+    boxLines[p] = t
+end
+
+local function hideBox(p)
+    if boxLines[p] then
+        for _, l in ipairs(boxLines[p]) do l.Visible = false end
+    end
+end
+
+local statLinesOk, statLines = pcall(function()
+    local t = {}
+    for i = 1, 4 do
+        local l = Drawing.new("Line")
+        l.Thickness, l.Transparency, l.Visible = 2, 0.60, false
+        t[i] = l
+    end
+    return t
+end)
+
+local drawOk, lines = pcall(function()
+    local t = {}
+    for i = 1, 4 do
+        local l = Drawing.new("Line")
+        l.Thickness, l.Transparency, l.Visible = 2, 0.60, false
+        t[i] = l
+    end
+    return t
+end)
+
+local function clr()
+    toolHL.Enabled, toolHL.Adornee = false, nil
+    for _, h in pairs(plrHL) do h.Enabled, h.Adornee = false, nil end
+    if drawOk then for _, l in ipairs(lines) do l.Visible = false end end
+    if statLinesOk then for _, l in ipairs(statLines) do l.Visible = false end end
+    for _, b in pairs(boxLines) do for _, l in ipairs(b) do l.Visible = false end end
+    for _, t in pairs(playerTexts) do t.Visible = false end
+    for _, d in pairs(playerDistanceTexts) do d.Visible = false end
+end
+
+local function hit(hdl, part)
+    local hum = part.Parent:FindFirstChildOfClass("Humanoid")
+    if hum and hum.Parent.Name ~= Lp.Name then
+        for _, v in ipairs(part.Parent:GetChildren()) do
+            if v:IsA("Part") then
+                firetouchinterest(v, hdl, 0)
+                firetouchinterest(v, hdl, 1)
+            end
+        end
+    end
+end
+
+local function drawSquare(dst, lineTable, color)
+    if dst <= 0 then
+        for i = 1, 4 do lineTable[i].Visible = false end
+        return
+    end
+    local corners = {
+        { dst, 0,  dst },
+        { dst, 0, -dst },
+        { -dst, 0, -dst },
+        { -dst, 0,  dst }
+    }
+    local pts, scr = {}, {}
+    for i, v in ipairs(corners) do
+        local rc = Ws:Raycast(Lp.Character.PrimaryPart.Position + Vector3.new(v[1], 50, v[3]), Vector3.new(0, -100, 0))
+        pts[i] = rc and rc.Position or (Lp.Character.PrimaryPart.Position + Vector3.new(v[1], 0, v[3]))
+        local screenPos = Cam:WorldToViewportPoint(pts[i])
+        scr[i] = Vector2.new(screenPos.X, screenPos.Y)
+    end
+    for i = 1, 4 do
+        local l = lineTable[i]
+        l.From = scr[i]
+        l.To = scr[(i % 4) + 1]
+        l.Color = color
+        l.Visible = vis
+    end
+end
+
+Run.RenderStepped:Connect(function()
+    if not active or not trueActive then return end
+    local tl = Lp.Character and Lp.Character:FindFirstChildOfClass("Tool")
+    if not tl then clr() return end
+    local hdl = tl:FindFirstChild("Handle") or tl:FindFirstChildOfClass("Part")
+    if not hdl then clr() return end
+
+    toolHL.Enabled = vis
+    toolHL.Adornee = vis and hdl or nil
+    toolHL.FillColor = getgenv().Reach.VizualizerColor
+
+    for _, pl in ipairs(Players:GetPlayers()) do
+        if pl ~= Lp then
+            local hrp = pl.Character and pl.Character:FindFirstChild("HumanoidRootPart")
+            local hl = plrHL[pl]
+            local nametag = playerTexts[pl]
+            local disttag = playerDistanceTexts[pl]
+
+            if hrp and hl and nametag and disttag then
+                local dist = (hrp.Position - hdl.Position).Magnitude
+                local inReach = dist <= Rng
+                local inStat = dist <= StatRng
+
+                hl.Adornee = inStat and highlightPlayers and pl.Character or nil
+                hl.FillColor = getgenv().Reach.VizualizerColor
+                hl.Enabled = inStat and vis and highlightPlayers
+
+                if drawBoxESP then
+                    if not boxLines[pl] then newBox(pl) end
+                    local char = pl.Character
+                    if char and char:FindFirstChild("Head") and inStat and vis then
+                        local pos = hrp.Position
+                        local size = Vector3.new(4, 6, 1.5)
+                        local corners = {
+                            Vector3.new(-size.X,  size.Y, -size.Z),
+                            Vector3.new( size.X,  size.Y, -size.Z),
+                            Vector3.new( size.X, -size.Y, -size.Z),
+                            Vector3.new(-size.X, -size.Y, -size.Z)}
+                        local projected, visibleAll = {}, true
+                        for _, corner in ipairs(corners) do
+                            local screen, _ = Cam:WorldToViewportPoint(pos + corner)
+                            table.insert(projected, Vector2.new(screen.X, screen.Y))
+                        end
+                        local b = boxLines[pl]
+                        for i = 1, 4 do
+                            b[i].From, b[i].To = projected[i], projected[(i % 4) + 1]
+                            b[i].Color, b[i].Visible = getgenv().Reach.StatColor, true
+                        end
+                    else hideBox(pl) end
+                else hideBox(pl) end
+
+                if showNameDistance then
+                    local head = pl.Character and pl.Character:FindFirstChild("Head")
+                    if head then
+                        local screenPos, onScreen = Cam:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                        if onScreen and inStat and vis then
+                            nametag.Text = pl.Name
+                            nametag.Position = Vector2.new(screenPos.X, screenPos.Y - 15)
+                            nametag.Color = getgenv().Reach.StatColor
+                            nametag.Visible = true
+                            disttag.Text = math.floor(dist) .. " studs"
+                            disttag.Position = Vector2.new(screenPos.X, screenPos.Y)
+                            disttag.Color = getgenv().Reach.StatColor
+                            disttag.Visible = true
+                        else
+                            nametag.Visible, disttag.Visible = false, false
+                        end
+                    end
+                else nametag.Visible, disttag.Visible = false, false end
+
+                if inReach then
+                    hit(hdl, hrp)
+                end
+            end
+        end
+    end
+
+    if drawOk then drawSquare(Rng, lines, getgenv().Reach.VizualizerColor) end
+    if statLinesOk then drawSquare(StatRng, statLines, getgenv().Reach.StatColor) end
+end)
+
+SwordTab:CreateSlider({
+    Name = "Reach Visualizer",
+    Range = { 0, 9 },
+    Increment = 0.5,
+    Suffix = "Studs",
+    CurrentValue = Rng,
+    Flag = "ReachVizSlider",
+    Callback = function(v) Rng = v end
+})
+
+SwordTab:CreateSlider({
+    Name = "Stat Visualizer",
+    Range = { 0, 10 },
+    Increment = 0.5,
+    Suffix = "Studs",
+    CurrentValue = StatRng,
+    Flag = "StatVizSlider",
+    Callback = function(v) StatRng = v end
+})
+
+SwordTab:CreateToggle({
+    Name = "Enable Visualizer",
+    CurrentValue = vis,
+    Callback = function(v)
+        vis = v
+        if not v then clr() end
+    end
+})
+
+SwordTab:CreateToggle({ Name = "Highlight Players", CurrentValue = highlightPlayers, Callback = function(v) highlightPlayers = v end })
+SwordTab:CreateToggle({ Name = "Draw Box ESP", CurrentValue = drawBoxESP, Callback = function(v) drawBoxESP = v end })
+SwordTab:CreateToggle({ Name = "Show Nametag & Distance", CurrentValue = showNameDistance, Callback = function(v) showNameDistance = v end })
+
+SwordTab:CreateColorPicker({
+    Name = "Reach Visualizer Color",
+    Color = getgenv().Reach.VizualizerColor,
+    Callback = function(v) getgenv().Reach.VizualizerColor = v end
+})
+
+SwordTab:CreateColorPicker({
+    Name = "Stat Visualizer Color",
+    Color = getgenv().Reach.StatColor,
+    Callback = function(v) getgenv().Reach.StatColor = v end
+})
+
+SwordTab:CreateToggle({ Name = "Toggle Reach", CurrentValue = trueActive, Callback = function(v) trueActive = v end })
+
+local EspTab = Window:CreateTab("Soda & Visuals", nil)
+local MainSection = EspTab:CreateSection("Device Spoofer")
+
+local remote = game.ReplicatedStorage.Remotes:WaitForChild("SetPlatform")
+
+local Button = EspTab:CreateButton({
+    Name = "Switch To PC Mode & Reset Player",
+    Callback = function()
+        remote:FireServer(false, false)
+game.Players.LocalPlayer.Character:BreakJoints()
+    end,
+})
+
+local Button = EspTab:CreateButton({
+    Name = "Switch To Controller Mode & Reset Player",
+    Callback = function()
+        remote:FireServer(false, true)
+game.Players.LocalPlayer.Character:BreakJoints()
+    end,
+})
+
+local Button = EspTab:CreateButton({
+    Name = "Switch To Mobile Mode & Reset Player",
+    Callback = function()
+        remote:FireServer(true, true)
+game.Players.LocalPlayer.Character:BreakJoints()
+    end,
+})
+
+local MainSection = EspTab:CreateSection("Visual Distractions")
+
+local ColorPicker = EspTab:CreateColorPicker({
+    Name = "Baseplate Color Picker",
+    Color = Color3.fromRGB(255,255,255),
+    Flag = "ColorPicker1",
+    Callback = function(Value)
+        game:GetService("Workspace").Baseplate.Color = Value
+    end
+})
+
+local ColorPicker = EspTab:CreateColorPicker({
+    Name = "SafeZone Color Picker",
+    Color = Color3.fromRGB(255,255,255),
+    Flag = "ColorPicker1",
+    Callback = function(Value5)
+        game:GetService("Workspace").Terrain.Spawn.Plate.Color = Value5
+    end
+})
+
+local originalParents = {}
+
+local Toggle = EspTab:CreateToggle({
+    Name = "Toggle Boards Visibility",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            for _, board in ipairs(workspace.Boards:GetChildren()) do
+                originalParents[board] = board.Parent
+                board.Parent = nil
+            end
+        else
+            for board, parent in pairs(originalParents) do
+                if board and parent then
+                    board.Parent = parent
+                end
+            end
+        end
+    end,
+})
+
+local Divider = EspTab:CreateDivider()
+
+local MainSection = EspTab:CreateSection("Player ESP + Beacons")
+
+local highlightFillColor = Color3.fromRGB(255, 255, 255)
+local beaconFillColor = Color3.fromRGB(255, 0, 0)
+local espTransparency = 0.5
+local beaconTransparency = 0.2
+local playerESPEnabled = false
+local playerBeaconsEnabled = false
+local rainbowModeEnabled = false
+local rainbowSpeed = 0.5
+local updateInterval = 0.01
+
+local pillarTransparency = 0.5
+local activeBeacons = {}
+
+local function getRainbowColor(speed)
+    local hue = tick() * speed % 1
+    return Color3.fromHSV(hue, 1, 1)
+end
+
+local function updateHighlight(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local highlight = player.Character:FindFirstChild("PlayerHighlight")
+        
+        if not highlight then
+            highlight = Instance.new("Highlight")
+            highlight.Name = "PlayerHighlight"
+            highlight.Adornee = player.Character
+            highlight.Parent = player.Character
+        end
+
+        highlight.FillColor = highlightFillColor
+        highlight.FillTransparency = espTransparency
+    end
+end
+
+local function removeHighlight(player)
+    if player.Character then
+        local highlight = player.Character:FindFirstChild("PlayerHighlight")
+        if highlight then
+            highlight:Destroy()
+        end
+    end
+end
+
+local function createBeacon(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        if activeBeacons[player.UserId] then return end
+
+        local beacon = Instance.new("Part")
+        beacon.Name = "PlayerBeacon"
+        beacon.Size = Vector3.new(5, 300, 5)
+        beacon.Shape = Enum.PartType.Block
+        beacon.Anchored = true
+        beacon.CanCollide = false
+        beacon.Material = Enum.Material.Neon
+        beacon.Color = beaconFillColor
+        beacon.Transparency = beaconTransparency
+        beacon.Position = player.Character.HumanoidRootPart.Position + Vector3.new(0, -50, 0)
+        beacon.Parent = workspace
+        activeBeacons[player.UserId] = beacon
+
+        game:GetService("RunService").Heartbeat:Connect(function()
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                beacon.Position = Vector3.new(player.Character.HumanoidRootPart.Position.X, 0, player.Character.HumanoidRootPart.Position.Z) + Vector3.new(0, 150, 0)
+            end
+        end)
+    end
+end
+
+local function removeBeacon(player)
+    local beacon = activeBeacons[player.UserId]
+    if beacon then
+        beacon:Destroy()
+        activeBeacons[player.UserId] = nil
+    end
+end
+
+local function resetBeacons()
+    for _, player in pairs(Players:GetPlayers()) do
+        removeBeacon(player)
+    end
+    for _, player in pairs(Players:GetPlayers()) do
+        if playerBeaconsEnabled then
+            createBeacon(player)
+        end
+    end
+end
+
+spawn(function()
+    while true do
+        wait(0.5)
+        resetBeacons()
+    end
+end)
+
+local function updatePlayerESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if playerESPEnabled then
+            updateHighlight(player)
+        else
+            removeHighlight(player)
+        end
+
+        if playerBeaconsEnabled then
+            if not activeBeacons[player.UserId] then
+                createBeacon(player)
+            end
+        else
+            removeBeacon(player)
+        end
+    end
+end
+
+spawn(function()
+    while true do
+        if playerESPEnabled or playerBeaconsEnabled then
+            updatePlayerESP()
+        end
+        wait(updateInterval)
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    if rainbowModeEnabled then
+        local color = getRainbowColor(rainbowSpeed)
+        highlightFillColor = color
+        beaconFillColor = color
+        updatePlayerESP()
+    end
+end)
+
+EspTab:CreateColorPicker({
+    Name = "Player ESP Color Picker",
+    Color = highlightFillColor,
+    Flag = "ESPColorPicker",
+    Callback = function(Value)
+        highlightFillColor = Value
+        updatePlayerESP()
+    end
+})
+
+EspTab:CreateColorPicker({
+    Name = "Player Beacon Color Picker",
+    Color = beaconFillColor,
+    Flag = "BeaconColorPicker",
+    Callback = function(Value)
+        beaconFillColor = Value
+        updatePlayerESP()
+    end
+})
+
+EspTab:CreateSlider({
+    Name = "ESP Transparency",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = espTransparency,
+    Flag = "ESPTransparency_Slider",
+    Callback = function(Value)
+        espTransparency = Value
+        updatePlayerESP()
+    end
+})
+
+EspTab:CreateSlider({
+    Name = "Beacon Transparency",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = beaconTransparency,
+    Flag = "BeaconTransparency_Slider",
+    Callback = function(Value)
+        beaconTransparency = Value
+        for _, beacon in pairs(activeBeacons) do
+            if beacon then
+                beacon.Transparency = beaconTransparency
+            end
+        end
+    end
+})
+
+EspTab:CreateToggle({
+    Name = "Rainbow Mode",
+    CurrentValue = false,
+    Flag = "RainbowMode_Toggle",
+    Callback = function(Value)
+        rainbowModeEnabled = Value
+    end
+})
+
+EspTab:CreateSlider({
+    Name = "Rainbow Speed",
+    Range = {0.1, 5},
+    Increment = 0.1,
+    CurrentValue = rainbowSpeed,
+    Flag = "RainbowSpeed_Slider",
+    Callback = function(Value)
+        rainbowSpeed = Value
+    end
+})
+
+EspTab:CreateToggle({
+    Name = "Player ESP",
+    CurrentValue = false,
+    Flag = "PlayerESP_Toggle",
+    Callback = function(Value)
+        playerESPEnabled = Value
+        updatePlayerESP()
+    end
+})
+
+EspTab:CreateToggle({
+    Name = "Player Beacons",
+    CurrentValue = false,
+    Flag = "PlayerBeacons_Toggle",
+    Callback = function(Value)
+        playerBeaconsEnabled = Value
+        updatePlayerESP()
+    end
+})
+
+
+
+local AutoTab = Window:CreateTab("Automatic", nil)
+local MainSection = AutoTab:CreateSection("Auto Snipe V17")
+
+
+
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local maxThreshold = 5
+local teleportDuration = 0.267
+local teleportHeight = 5
+local teleporting = false
+local currentlyHighlightedPlayer = nil
+local maxRadius = 55
+
+local isSpectating = false
+local spectatedPlayer = nil
+local spectateConnection = nil
+
+local safeZoneCheckEnabled = false
+local safeZoneCheckConnection = nil
+
+local autoSpamTeleportEnabled = false
+local autoSpamTeleportConnection = nil
+local lastTeleportTime = 0
+local teleportCooldown = 1
+
+local worldInputConnection = nil
+local keybindInputConnection = nil
+
+local function distanceFromRay(rayOrigin, rayDirection, point)
+    local v = point - rayOrigin
+    local t = rayDirection:Dot(v)
+    if t < 0 then
+        return math.huge
+    end
+    local projection = rayOrigin + rayDirection * t
+    return (point - projection).Magnitude
+end
+
+local function getClosestPlayerFromRay(rayOrigin, rayDirection, threshold)
+    local closestPlayer = nil
+    local closestDistance = math.huge
+
+    for _, player in pairs(Players:GetPlayers()) do    
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then    
+            local partPos = player.Character.HumanoidRootPart.Position    
+            local rayDist = distanceFromRay(rayOrigin, rayDirection, partPos)    
+            local playerDist = (LocalPlayer.Character.HumanoidRootPart.Position - partPos).Magnitude  
+
+            if rayDist < closestDistance and playerDist <= maxRadius then    
+                closestDistance = rayDist    
+                closestPlayer = player    
+            end    
+        end    
+    end    
+
+    return (closestDistance <= threshold) and closestPlayer or nil
+end
+
+local function removeHighlight(player)
+    if player and player.Character then
+        for _, descendant in ipairs(player.Character:GetDescendants()) do
+            if descendant:IsA("SelectionBox") and descendant.Name == "PlayerHighlight" then
+                descendant:Destroy()
+            end
+        end
+    end
+end
+
+local function highlightPlayer(player)
+    if not player or not player.Character then return end
+    for _, part in ipairs(player.Character:GetDescendants()) do
+        if part:IsA("BasePart") and not part:FindFirstChild("PlayerHighlight") then
+            local selectionBox = Instance.new("SelectionBox")
+            selectionBox.Adornee = part
+            selectionBox.Color3 = Color3.new(1, 0, 0)
+            selectionBox.LineThickness = 0.05
+            selectionBox.Name = "PlayerHighlight"
+            selectionBox.Parent = part
+        end
+    end
+end
+
+local function equipFirstSword()
+    for _, item in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if item:IsA("Tool") and item.Name:lower():find("sword") then
+            LocalPlayer.Character:FindFirstChild("Humanoid"):EquipTool(item)
+            return item
+        end
+    end
+    return nil
+end
+
+local function isOutsideSafeZone(position)
+    return position.X < -33.50 or position.X > 33.50
+        or position.Y < 0 or position.Y > 100
+        or position.Z < -33.50 or position.Z > 33.50
+end
+
+local function safeZoneCheck()
+    if safeZoneCheckConnection then
+        safeZoneCheckConnection:Disconnect()
+        safeZoneCheckConnection = nil
+    end
+
+    if safeZoneCheckEnabled and currentlyHighlightedPlayer then
+        safeZoneCheckConnection = RunService.Heartbeat:Connect(function()
+            if currentlyHighlightedPlayer and currentlyHighlightedPlayer.Character then
+                local targetPart = currentlyHighlightedPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if targetPart and isOutsideSafeZone(targetPart.Position) then
+                    if not teleporting then
+                        teleportToPlayer(currentlyHighlightedPlayer)
+                    end
+                end
+            end
+        end)
+    end
+end
+
+local function teleportToPlayer(player)
+    if teleporting or not player or not player.Character then return end
+
+    local targetCharacter = player.Character    
+    local targetPart = targetCharacter:FindFirstChild("HumanoidRootPart")    
+    if not targetPart then return end    
+
+    if safeZoneCheckEnabled and not isOutsideSafeZone(targetPart.Position) then
+        return
+    end
+
+    local targetHumanoid = targetCharacter:FindFirstChildOfClass("Humanoid")
+    if not targetHumanoid or targetHumanoid.Health <= 0 then
+        return
+    end
+
+    local localCharacter = LocalPlayer.Character    
+    if not (localCharacter and localCharacter:FindFirstChild("HumanoidRootPart")) then return end    
+
+    local localHRP = localCharacter.HumanoidRootPart    
+    local playerDist = (localHRP.Position - targetPart.Position).Magnitude  
+
+    if playerDist > maxRadius then  
+        return  
+    end  
+
+    local adjustedTeleportDuration = teleportDuration  
+    if playerDist > 50 then  
+        adjustedTeleportDuration = 0.30 
+    elseif playerDist > 35 then  
+        adjustedTeleportDuration = 0.200  
+    end  
+
+    local originalCFrame = localHRP.CFrame    
+    teleporting = true    
+
+    local sword = equipFirstSword()  
+
+    local connection    
+    connection = RunService.RenderStepped:Connect(function()    
+        if targetPart and targetPart.Parent and localHRP then    
+            localHRP.CFrame = targetPart.CFrame + Vector3.new(0, teleportHeight, 0)    
+        end    
+    end)    
+
+    task.delay(adjustedTeleportDuration, function()    
+        if connection then    
+            connection:Disconnect()    
+        end  
+        if localCharacter and localCharacter:FindFirstChild("HumanoidRootPart") then    
+            localHRP.CFrame = originalCFrame    
+        end  
+        teleporting = false    
+
+        if sword then  
+            sword.Parent = LocalPlayer.Backpack
+        end  
+    end)
+end
+
+local function startAutoSpamTeleport()
+    if autoSpamTeleportConnection then
+        autoSpamTeleportConnection:Disconnect()
+        autoSpamTeleportConnection = nil
+    end
+
+    if autoSpamTeleportEnabled and currentlyHighlightedPlayer then
+        autoSpamTeleportConnection = RunService.Heartbeat:Connect(function()
+            local currentTime = tick()
+            if currentTime - lastTeleportTime >= teleportCooldown then
+                if currentlyHighlightedPlayer and currentlyHighlightedPlayer.Character then
+                    teleportToPlayer(currentlyHighlightedPlayer)
+                    lastTeleportTime = currentTime
+                end
+            end
+        end)
+    end
+end
+
+local function stopSpectating()
+    if isSpectating then
+        isSpectating = false
+        if spectateConnection then
+            spectateConnection:Disconnect()
+            spectateConnection = nil
+        end
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            Camera.CameraSubject = humanoid
+        end
+        spectatedPlayer = nil
+    end
+end
+
+local function onPlayerRemoving(player)
+    if player == spectatedPlayer then
+        stopSpectating()
+    end
+end
+
+local function onSpectateButtonClicked()
+    if isSpectating then
+        stopSpectating()
+    else
+        if currentlyHighlightedPlayer then
+            local targetCharacter = currentlyHighlightedPlayer.Character
+            if targetCharacter then
+                local humanoid = targetCharacter:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    isSpectating = true
+                    spectatedPlayer = currentlyHighlightedPlayer
+                    Camera.CameraSubject = humanoid
+
+                    spectateConnection = RunService.Heartbeat:Connect(function()  
+                        if not spectatedPlayer or not isSpectating then return end  
+                          
+                        local characterx = spectatedPlayer.Character  
+                        if not characterx then  
+                            stopSpectating()  
+                            return  
+                        end  
+                          
+                        local currentHumanoid = characterx:FindFirstChildOfClass("Humanoid")
+                        if not currentHumanoid or currentHumanoid.Health < 1 then  
+                            stopSpectating()  
+                        end  
+                    end)  
+                end  
+            end  
+        end  
+    end
+end
+
+local function onWorldInput(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local inputPos = input.Position
+        local mouseRay = Camera:ScreenPointToRay(inputPos.X, inputPos.Y)
+        local tappedPlayer = getClosestPlayerFromRay(mouseRay.Origin, mouseRay.Direction.Unit, maxThreshold)
+
+        if tappedPlayer then    
+            if currentlyHighlightedPlayer and currentlyHighlightedPlayer ~= tappedPlayer then    
+                removeHighlight(currentlyHighlightedPlayer)    
+            end    
+            if currentlyHighlightedPlayer ~= tappedPlayer then    
+                highlightPlayer(tappedPlayer)    
+                currentlyHighlightedPlayer = tappedPlayer    
+            end    
+        end    
+    end
+end
+
+local function onKeybindInput(input, gameProcessed)
+    if gameProcessed then return end
+
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.V then  
+        if currentlyHighlightedPlayer then  
+            teleportToPlayer(currentlyHighlightedPlayer)  
+        end  
+    end  
+
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.B then  
+        onSpectateButtonClicked()  
+    end
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TeleportGui"
+screenGui.ResetOnSpawn = false
+screenGui.Enabled = false
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local teleportButton = Instance.new("TextButton")
+teleportButton.Name = "TeleportButton"
+teleportButton.Text = "V"
+teleportButton.Size = UDim2.new(0, 50, 0, 50)
+teleportButton.Position = UDim2.new(0, 10, 0.5, -25)
+teleportButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+teleportButton.TextColor3 = Color3.new(1, 1, 1)
+teleportButton.Font = Enum.Font.SourceSansBold
+teleportButton.TextScaled = true
+teleportButton.Active = true
+teleportButton.Draggable = true
+teleportButton.Parent = screenGui
+
+local spectateButton = Instance.new("TextButton")
+spectateButton.Name = "SpectateButton"
+spectateButton.Text = "B"
+spectateButton.Size = UDim2.new(0, 50, 0, 50)
+spectateButton.Position = UDim2.new(0, 70, 0.5, -25)
+spectateButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+spectateButton.TextColor3 = Color3.new(1, 1, 1)
+spectateButton.Font = Enum.Font.SourceSansBold
+spectateButton.TextScaled = true
+spectateButton.Active = true
+spectateButton.Draggable = true
+spectateButton.Parent = screenGui
+
+teleportButton.MouseButton1Click:Connect(function()
+    if currentlyHighlightedPlayer then
+        teleportToPlayer(currentlyHighlightedPlayer)
+    end
+end)
+
+spectateButton.MouseButton1Click:Connect(onSpectateButtonClicked)
+
+Players.PlayerRemoving:Connect(onPlayerRemoving)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if isSpectating then
+        stopSpectating()
+    end
+end)
+
+AutoTab:CreateButton({
+    Name = "Enable Mobile GUI ON/OFF",
+    Callback = function()
+        screenGui.Enabled = not screenGui.Enabled
+    end,
+})
+
+AutoTab:CreateSlider({
+    Name = "Teleport Height",
+    Range = {-6, 13},
+    Increment = 1,
+    Suffix = "Studs",
+    CurrentValue = 13,
+    Flag = "Slider1",
+    Callback = function(Value)
+        teleportHeight = Value
+    end,
+})
+
+AutoTab:CreateToggle({
+    Name = "Enable Script",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            if not worldInputConnection then
+                worldInputConnection = UserInputService.InputBegan:Connect(onWorldInput)
+            end
+            if not keybindInputConnection then
+                keybindInputConnection = UserInputService.InputBegan:Connect(onKeybindInput)
+            end
+        else
+            if worldInputConnection then
+                worldInputConnection:Disconnect()
+                worldInputConnection = nil
+            end
+            if keybindInputConnection then
+                keybindInputConnection:Disconnect()
+                keybindInputConnection = nil
+            end
+            removeHighlight(currentlyHighlightedPlayer)
+            currentlyHighlightedPlayer = nil
+            stopSpectating()
+        end
+    end,
+})
+
+AutoTab:CreateToggle({
+    Name = "Enable Safe Zone Check",
+    CurrentValue = false,
+    Flag = "Toggle2",
+    Callback = function(Value)
+        safeZoneCheckEnabled = Value
+        safeZoneCheck()
+    end,
+})
+
+AutoTab:CreateToggle({
+    Name = "Auto Spam Teleport",
+    CurrentValue = false,
+    Flag = "Toggle3",
+    Callback = function(Value)
+        autoSpamTeleportEnabled = Value
+        startAutoSpamTeleport()
+    end,
+})
+
+AutoTab:CreateSlider({
+    Name = "Teleport Spam Speed",
+    Range = {0.1, 5},
+    Increment = 0.1,
+    Suffix = "s",
+    CurrentValue = 1,
+    Flag = "Slider2",
+    Callback = function(Value)
+        teleportCooldown = Value
+    end,
+})
+
+local MainSection = AutoTab:CreateSection("OG AutoSnipe")
+
+local floatHeight = 7 -- Default teleport height
+local maxFollowDistance = 25 -- Maximum teleport distance (radius slider value)
+local autoSnipeEnabled = false -- Toggle state
+local minimumTime = 1 -- Default minimum time to teleport
+local shouldRunLoop = false -- To safely stop the loop dynamically
+
+local minX, maxX = -33.40, 33.40
+local minY, maxY = 0, 100
+local minZ, maxZ = -33.40, 33.40
+
+local function isOutsideSafeZone(position)
+    return position.X < minX or position.X > maxX
+        or position.Y < minY or position.Y > maxY
+        or position.Z < minZ or position.Z > maxZ
+end
+
+local function canTeleport(player)
+    local leaderstats = player:FindFirstChild("leaderstats")
+    local timeValue = leaderstats and leaderstats:FindFirstChild("Time")
+
+    if not leaderstats or not timeValue then
+        print("Error: leaderstats or Time value not found for player:", player.Name)
+        return false
+    end
+
+    return timeValue.Value >= minimumTime
+end
+
+local function getFirstValidPlayer()
+    local localHumanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not localHumanoidRootPart then return nil end
+
+    for _, targetPlayer in ipairs(game.Players:GetPlayers()) do
+        if targetPlayer ~= player and targetPlayer.Character then
+            local targetHumanoidRootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local humanoid = targetPlayer.Character:FindFirstChild("Humanoid")
+
+            if humanoid and humanoid.Health > 0 and targetHumanoidRootPart then
+                local distance = (localHumanoidRootPart.Position - targetHumanoidRootPart.Position).Magnitude
+
+                if distance <= maxFollowDistance
+                    and isOutsideSafeZone(targetHumanoidRootPart.Position)
+                    and canTeleport(targetPlayer) then
+                    return targetPlayer -- Return the first valid player
+                end
+            end
+        end
+    end
+
+    return nil -- No valid player found
+end
+
+local function autoSnipeLoop()
+    shouldRunLoop = true
+
+    while autoSnipeEnabled and shouldRunLoop do
+        local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+
+        if humanoidRootPart then
+            local targetPlayer = getFirstValidPlayer()
+            if targetPlayer then
+                local targetHumanoidRootPart = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+                if targetHumanoidRootPart then
+                    local targetPosition = targetHumanoidRootPart.Position + Vector3.new(0, floatHeight, 0)
+
+                    player.Character:SetPrimaryPartCFrame(CFrame.new(targetPosition))
+                else
+                    print("Target does not have a valid HumanoidRootPart.")
+                end
+            else
+                print("No valid target found.")
+            end
+        else
+            print("Local player does not have a valid HumanoidRootPart.")
+        end
+
+        task.wait(0.0000001) -- Execute every 0.001 seconds
+    end
+end
+
+local function printAllPlayerTimes()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        local leaderstats = player:FindFirstChild("leaderstats")
+        local timeValue = leaderstats and leaderstats:FindFirstChild("Time")
+        if timeValue then
+            print(player.Name .. "'s time: " .. tostring(timeValue.Value))
+        else
+            print(player.Name .. " has no time value.")
+        end
+    end
+end
+
+local autoSnipeToggle = AutoTab:CreateToggle({
+    Name = "AutoSnipe Toggle",
+    CurrentValue = autoSnipeEnabled,
+    Flag = "AutoSnipeToggle",
+    Callback = function(Value)
+        autoSnipeEnabled = Value
+        if autoSnipeEnabled then
+            print("AutoSnipe Enabled")
+            printAllPlayerTimes()
+            task.spawn(autoSnipeLoop) -- Start the loop in a new thread
+        else
+            print("AutoSnipe Disabled")
+            shouldRunLoop = false -- Safely stop the loop
+        end
+    end,
+})
+
+local minimumTimeInput = AutoTab:CreateInput({
+    Name = "Minimum Time",
+    CurrentValue = tostring(minimumTime),
+    PlaceholderText = "Enter time in seconds",
+    RemoveTextAfterFocusLost = false,
+    Flag = "TimeInput",
+    Callback = function(Text)
+        local value = tonumber(Text)
+        if value then
+            minimumTime = value
+            print("Minimum time dynamically updated to:", minimumTime)
+        else
+            print("Invalid input. Please enter a number.")
+        end
+    end,
+})
+
+local floatHeightSlider = AutoTab:CreateSlider({
+    Name = "Teleport Height",
+    Range = {0, 10},
+    Increment = 0.1,
+    Suffix = " studs",
+    CurrentValue = floatHeight,
+    Flag = "HeightSlider",
+    Callback = function(Value)
+        floatHeight = Value
+        print("Teleport height dynamically updated to:", Value)
+    end,
+})
+
+local maxDistanceSlider = AutoTab:CreateSlider({
+    Name = "Max Distance",
+    Range = {5, 50},
+    Increment = 0.1,
+    Suffix = " studs > 25 = Kick",
+    CurrentValue = maxFollowDistance,
+    Flag = "DistanceSlider",
+    Callback = function(Value)
+        maxFollowDistance = Value
+        print("Max distance dynamically updated to:", Value)
+    end,
+})
+
+spawn(function()
+    while true do
+        if isTeleporting then
+            teleportPlayer()
+        end
+        wait(0.5) -- Wait for 0.5 seconds before checking again
+    end
+end)
+
+
+
+local Divider = AutoTab:CreateDivider()
+local MainSection = AutoTab:CreateSection("Simple Auto Stare Controls")
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local trackingEnabled = false
+local maxDistance = 25
+local smoothSpeed = 0.15
+local switchDelay = 1.5
+local lookNear = false
+local lookStrength = 2
+local stareAtSpecificPlayer = false
+
+local selectedPart = "HumanoidRootPart"
+local lastTargetSwitch = 0
+local currentTarget = nil
+local selectedPlayerNames = {}
+
+local playerOptions = {}
+local playerOptionList = {}
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= player then
+        local opt = p.DisplayName .. " (" .. p.Name .. ")"
+        table.insert(playerOptionList, opt)
+        playerOptions[opt] = p.Name
+    end
+end
+
+local Toggle = AutoTab:CreateToggle({
+    Name = "Enable Staring",
+    CurrentValue = false,
+    Flag = "Toggle_Staring",
+    Callback = function(state)
+        trackingEnabled = state
+    end,
+})
+
+local Slider = AutoTab:CreateSlider({
+    Name = "Stare Distance",
+    Range = {0, 100},
+    Increment = 1,
+    Suffix = "Studs",
+    CurrentValue = maxDistance,
+    Flag = "Slider_Distance",
+    Callback = function(value)
+        maxDistance = tonumber(value) or 7.5
+    end,
+})
+
+local SmoothnessSlider = AutoTab:CreateSlider({
+    Name = "Smoothness",
+    Range = {0.01, 1},
+    Increment = 0.01,
+    Suffix = "Rigidness",
+    CurrentValue = smoothSpeed,
+    Flag = "Slider_Smoothness",
+    Callback = function(value)
+        smoothSpeed = value
+    end,
+})
+
+local MainSection = AutoTab:CreateSection("Advanced Auto Stare Controls")
+
+local MinSwitchSlider = AutoTab:CreateSlider({
+    Name = "Min Switch Time",
+    Range = {0, 5},
+    Increment = 0.1,
+    Suffix = "s",
+    CurrentValue = switchDelay,
+    Flag = "Slider_SwitchDelay",
+    Callback = function(value)
+        switchDelay = value
+    end,
+})
+
+local LookStrengthSlider = AutoTab:CreateSlider({
+    Name = "Look Offset Strength",
+    Range = {0, 10},
+    Increment = 0.1,
+    Suffix = "",
+    CurrentValue = lookStrength,
+    Flag = "Slider_Strength",
+    Callback = function(value)
+        lookStrength = value
+    end,
+})
+
+
+
+local LookNearToggle = AutoTab:CreateToggle({
+    Name = "Look Near Part",
+    CurrentValue = false,
+    Flag = "Toggle_LookNear",
+    Callback = function(state)
+        lookNear = state
+    end,
+})
+
+local SpecificPlayerToggle = AutoTab:CreateToggle({
+    Name = "Stare at Selected Player",
+    CurrentValue = false,
+    Flag = "Toggle_StareAtSelectedPlayer",
+    Callback = function(state)
+        stareAtSpecificPlayer = state
+    end,
+})
+
+local PlayerInput = AutoTab:CreateInput({
+    Name = "Player Search",
+    CurrentValue = "",
+    PlaceholderText = "Type username or display name can be shortened",
+    RemoveTextAfterFocusLost = false,
+    Flag = "Input_Player",
+    Callback = function(text)
+        selectedPlayerNames = {}
+        local newSelection = {}
+
+        for _, opt in ipairs(playerOptionList) do
+            if opt:lower():find(text:lower(), 1, true) then
+                table.insert(newSelection, opt)
+                table.insert(selectedPlayerNames, playerOptions[opt])
+            end
+        end
+    end,
+})
+
+local function updateShiftLockStatus()
+    isShiftLocked = UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter
+end
+
+UserInputService.InputChanged:Connect(updateShiftLockStatus)
+UserInputService.InputEnded:Connect(updateShiftLockStatus)
+
+local function getNearestPlayer()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+
+    local nearestPlayer = nil
+    local shortestDistance = maxDistance
+    local playerPos = player.Character.HumanoidRootPart.Position
+
+    for _, otherPlayer in pairs(Players:GetPlayers()) do
+        if otherPlayer ~= player and otherPlayer.Character then
+            local consider = true
+            if #selectedPlayerNames > 0 then
+                consider = false
+                for _, selName in ipairs(selectedPlayerNames) do
+                    if otherPlayer.Name:lower():find(selName:lower(), 1, true) then
+                        consider = true
+                        break
+                    end
+                end
+            end
+
+            if consider then
+                local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if otherRoot and otherPlayer.Character:FindFirstChild("Humanoid") and otherPlayer.Character.Humanoid.Health > 1 then
+                    local dist = (playerPos - otherRoot.Position).Magnitude
+                    if dist < shortestDistance then
+                        shortestDistance = dist
+                        nearestPlayer = otherPlayer
+                    end
+                end
+            end
+        end
+    end
+
+    return nearestPlayer
+end
+
+RunService.RenderStepped:Connect(function(dt)
+    if trackingEnabled and not isShiftLocked and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local now = tick()
+        local nearest = nil
+
+        if stareAtSpecificPlayer then
+            if #selectedPlayerNames > 0 then
+                for _, selectedName in ipairs(selectedPlayerNames) do
+                    for _, otherPlayer in pairs(Players:GetPlayers()) do
+                        if otherPlayer.Name == selectedName then
+                            nearest = otherPlayer
+                            break
+                        end
+                    end
+                end
+            end
+        else
+            nearest = getNearestPlayer()
+        end
+
+        if nearest and nearest ~= currentTarget and now - lastTargetSwitch >= switchDelay then
+            currentTarget = nearest
+            lastTargetSwitch = now
+        end
+
+        if currentTarget and currentTarget.Character then
+            local myRoot = player.Character.HumanoidRootPart
+            local targetPart = currentTarget.Character:FindFirstChild(selectedPart)
+
+            if myRoot and targetPart then
+                local targetPos = targetPart.Position
+
+                if lookNear then
+                    local offset = Vector3.new(
+                        math.random(-lookStrength, lookStrength),
+                        0,
+                        math.random(-lookStrength, lookStrength)
+                    )
+                    targetPos = targetPos + offset
+                end
+
+                local direction = (targetPos - myRoot.Position)
+                direction = Vector3.new(direction.X, 0, direction.Z).Unit
+
+                local desiredCFrame = CFrame.new(myRoot.Position, myRoot.Position + direction)
+
+                if modeType == "Exponential" then
+                    myRoot.CFrame = myRoot.CFrame:Lerp(desiredCFrame, 1 - math.exp(-smoothSpeed * dt * 60))
+                else
+                    myRoot.CFrame = myRoot.CFrame:Lerp(desiredCFrame, smoothSpeed)
+                end
+            end
+        end
+    end
+end)
+
+local Divider = AutoTab:CreateDivider()
+
+
+local MainSection = AutoTab:CreateSection("Auto Jump")
+
+local DistanceThreshold = 10 -- Default threshold value
+local Slider = AutoTab:CreateSlider({
+   Name = "Jump Distance Threshold",
+   Range = {0, 100}, -- Adjust the range as needed
+   Increment = 5, -- Adjust increment steps as needed
+   Suffix = " Studs",
+   CurrentValue = DistanceThreshold,
+   Flag = "JumpDistanceSlider", -- Unique flag for saving configuration
+   Callback = function(Value)
+      DistanceThreshold = Value -- Update the distance threshold when the slider changes
+   end,
+})
+
+local AutoJumpToggle = false
+local Toggle = AutoTab:CreateToggle({
+   Name = "Auto-Jump",
+   CurrentValue = false,
+   Flag = "AutoJumpToggle", -- Unique flag for saving configuration
+   Callback = function(Value)
+      AutoJumpToggle = Value
+      if Value then
+         StartAutoJump()
+      end
+   end,
+})
+
+function SimulateJump()
+
+   if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+      player.Character.Humanoid.Jump = true
+   end
+end
+
+function GetNearestPlayer()
+
+   local nearestPlayer = nil
+   local shortestDistance = DistanceThreshold
+
+   if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+      local playerPosition = player.Character.HumanoidRootPart.Position
+      for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+         if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local distance = (playerPosition - otherPlayer.Character.HumanoidRootPart.Position).Magnitude
+            if distance <= shortestDistance then
+               shortestDistance = distance
+               nearestPlayer = otherPlayer
+            end
+         end
+      end
+   end
+
+   return nearestPlayer
+end
+
+function StartAutoJump()
+   spawn(function()
+      while AutoJumpToggle do
+         local nearestPlayer = GetNearestPlayer()
+         if nearestPlayer then
+            SimulateJump()
+         end
+         wait(0.05) -- Adjust the delay between jumps as needed
+      end
+   end)
+end
+
+
+local shakeAngle = 30 -- Shake angle (degrees)
+local shakeSpeed = 7 -- Shake frequency (cycles/second)
+local smoothness = 2 -- Shake smoothness multiplier
+local shaking = false -- Shaking enabled by default
+local mobileFlickEnabled = false -- Mobile users toggle
+
+
+
+
+
+
+local player = Players.LocalPlayer
+local currentShakeConnection
+
+local function isShiftLockEnabled()
+    return UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter
+end
+
+local function createShakeGUI()
+    local MainSection = AutoTab:CreateSection("Auto Shake Settings")
+local Divider = AutoTab:CreateDivider()
+
+
+    AutoTab:CreateSlider({
+        Name = "Shake Speed",
+        Range = {1, 50},
+        Increment = 1,
+        Suffix = "Hz",
+        CurrentValue = shakeSpeed,
+        Flag = "ShakeSpeed",
+        Callback = function(Value)
+            shakeSpeed = Value
+        end,
+    })
+
+    AutoTab:CreateSlider({
+        Name = "Shake Smoothness",
+        Range = {0.1, 5},
+        Increment = 0.1,
+        Suffix = "x",
+        CurrentValue = smoothness,
+        Flag = "ShakeSmoothness",
+        Callback = function(Value)
+            smoothness = Value
+        end,
+    })
+
+    AutoTab:CreateSlider({
+        Name = "Shake Amount",
+        Range = {0, 30},
+        Increment = 1,
+        Suffix = "Â°",
+        CurrentValue = shakeAngle,
+        Flag = "ShakeAmount",
+        Callback = function(Value)
+            shakeAngle = Value
+        end,
+    })
+
+    AutoTab:CreateToggle({
+        Name = "Shake Enabled",
+        CurrentValue = shaking,
+        Flag = "ShakeEnabled",
+        Callback = function(Value)
+            shaking = Value
+            if not shaking and currentShakeConnection then
+                currentShakeConnection:Disconnect()
+                currentShakeConnection = nil
+            end
+        end,
+    })
+
+    AutoTab:CreateButton({
+        Name = "WIP",
+        Callback = function()
+            mobileFlickEnabled = not mobileFlickEnabled
+            print("Mobile Auto Flick: " .. tostring(mobileFlickEnabled))
+        end,
+    })
+end
+
+local function startShaking(humanoidRootPart)
+    if currentShakeConnection then
+        currentShakeConnection:Disconnect()
+        currentShakeConnection = nil
+    end
+
+    currentShakeConnection = RunService.RenderStepped:Connect(function()
+        if not shaking or isShiftLockEnabled() then return end
+
+        local time = os.clock() * shakeSpeed * 2 * math.pi
+        local offsetAngle = math.sin(time / smoothness) * math.rad(shakeAngle)
+        local baseCFrame = humanoidRootPart.CFrame
+        humanoidRootPart.CFrame = baseCFrame * CFrame.Angles(0, offsetAngle, 0)
+    end)
+end -- Added this 'end' to close the 'startShaking' function
+
+local function initializeScript(character)
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if humanoidRootPart then
+        startShaking(humanoidRootPart)
+    else
+        warn("HumanoidRootPart not found in character.")
+    end
+end
+
+player.CharacterAdded:Connect(function(character)
+    character:WaitForChild("HumanoidRootPart")
+    initializeScript(character)
+end)
+
+UserInputService.InputChanged:Connect(function()
+    if not isShiftLockEnabled() and shaking and player.Character then
+        local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            startShaking(humanoidRootPart)
+        end
+    end
+end)
+
+createShakeGUI()
+if player.Character then
+    initializeScript(player.Character)
+end
+
+local Divider = AutoTab:CreateDivider()
+
+local VisTab = Window:CreateTab(" Character & Game Mods", nil)
+local MainSection = VisTab:CreateSection("Hip Height")
+
+local Slider = VisTab:CreateSlider({
+    Name = "Hip Height",
+    Range = {-2, 14},
+    Increment = 1,
+    Suffix = "Studs",
+    CurrentValue = 0,
+    Flag = "Slider1", 
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        if player and player.Character then
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.HipHeight = Value
+            end
+        end
+    end,
+})
+
+
+local Slider = VisTab:CreateSlider({
+   Name = "Field of View",
+   Range = {70, 120}, -- The range of the slider (FOV values)
+   Increment = 1, -- The step value for the slider
+   Suffix = "", -- Suffix to display the unit (degrees)
+   CurrentValue = 90, -- Default FOV value
+   Flag = "FOVSlider", -- Unique identifier for the slider
+   Callback = function(Value)
+      local camera = game.Workspace:FindFirstChild("Camera")
+      if camera then
+         camera.FieldOfView = Value
+         print("Field of View updated to:", Value)
+      else
+         warn("Camera not found in Workspace.")
+      end
+   end,
+})
+
+local MiscTab = Window:CreateTab("Misc", nil)
+local MainSection = MiscTab:CreateSection("Device Spoofer")
+local originalParents = {}
+
+
+local Button = MiscTab:CreateButton({
+   Name = "Spectate List",
+   Callback = function()
+   local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local SpectateButton = Player.PlayerGui.UserInterface.Playerlist.Buttons.Spectate
+local SelectedUser = nil
+local PlayersToConnect = {}
+
+SpectateButton.Visible = true
+SpectateButton.Text = "Spectate"
+
+local View = function(TargetPlayer, Me)
+    local Camera = game.Workspace.CurrentCamera
+    if Me then
+        Camera.CameraSubject = Player.Character.Humanoid
+        Camera.CameraType = Enum.CameraType.Custom
+    else
+        if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("Humanoid") then
+            Camera.CameraSubject = TargetPlayer.Character:FindFirstChild("Humanoid")
+            Camera.CameraType = Enum.CameraType.Custom
+        end
+    end
+end
+
+for _, plr in ipairs(Players:GetPlayers()) do
+    table.insert(PlayersToConnect, plr.UserId)
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    table.insert(PlayersToConnect, plr.UserId)
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    local idx = table.find(PlayersToConnect, plr.UserId)
+    if idx then
+        table.remove(PlayersToConnect, idx)
+    end
+end)
+
+SpectateButton.Activated:Connect(function()
+    if SelectedUser then
+        View(SelectedUser)
+    end
+end)
+
+while task.wait() do
+    local PlayerButtons = Player.PlayerGui.UserInterface.Playerlist.ScrollingFrame:GetChildren()
+    for _, button in ipairs(PlayerButtons) do
+        local plrId = tonumber(button.Name)
+        if plrId and table.find(PlayersToConnect, plrId) then
+            table.remove(PlayersToConnect, plrId)
+            button.Activated:Connect(function()
+                local plr = Players:GetPlayerByUserId(plrId)
+                if plr then
+                    SelectedUser = plr
+                end
+            end)
+        end
+    end
+end
+   end,
+})
+
+local Button = MiscTab:CreateButton({
+   Name = "Boost Fps *irreversible*",
+   Callback = function()
+_G.Ignore = {}
+_G.Settings = {
+	Players = {
+		["Ignore Me"] = true,
+		["Ignore Others"] = true,
+		["Ignore Tools"] = true
+	},
+	Meshes = {
+		NoMesh = false,
+		NoTexture = false,
+		Destroy = false
+	},
+	Images = {
+		Invisible = true,
+		Destroy = false
+	},
+	Explosions = {
+		Smaller = true,
+		Invisible = false, -- Not for PVP games
+		Destroy = false -- Not for PVP games
+	},
+	Particles = {
+		Invisible = true,
+		Destroy = false
+	},
+	TextLabels = {
+		LowerQuality = true,
+		Invisible = false,
+		Destroy = false
+	},
+	MeshParts = {
+		LowerQuality = true,
+		Invisible = false,
+		NoTexture = false,
+		NoMesh = false,
+		Destroy = false
+	},
+	Other = {
+		["FPS Cap"] = 360, -- true to uncap
+		["No Camera Effects"] = true,
+		["No Clothes"] = true,
+		["Low Water Graphics"] = true,
+		["No Shadows"] = true,
+		["Low Rendering"] = true,
+		["Low Quality Parts"] = true,
+		["Low Quality Models"] = true,
+		["Reset Materials"] = true,
+	}
+}
+loadstring(game:HttpGet("https://raw.githubusercontent.com/CasperFlyModz/discord.gg-rips/main/FPSBooster.lua"))()
+   end,
+})
+
+local Button = MiscTab:CreateButton({
+   Name = "Destroy GUI - Does Not Disable Script",
+   Callback = function()
+   Rayfield:Destroy()
+   end,
+})
+local Divider = EspTab:CreateDivider()
+
+
+
+local Divider = EspTab:CreateDivider()
+
+local MainControls = EspTab:CreateSection("Main Soda Controls")
+
+--// Globals using getgenv
+getgenv().radius = 100
+getgenv().isAutoTPActive = false
+getgenv().selectedRarities = {}
+getgenv().timeRanges = {
+    ["Basic (Grey)"] = {1, 99},
+    ["Common (Blue)"] = {100, 499},
+    ["Uncommon (Purple)"] = {500, 999},
+    ["Rare (Red)"] = {1000, 1499},
+    ["Legendary (Yellow)"] = {1500, 2499},
+    ["Impossible (Green)"] = {2500, math.huge}
+}
+getgenv().EnableStatusNotification = true
+getgenv().MaxTeleportAttempts = 3
+getgenv().PrioritizeRarity = false
+
+--// UI Setup
+local ping = math.floor(game.Players.LocalPlayer:GetNetworkPing() * 1000 * 1.5)
+local PingLabel = EspTab:CreateLabel("Ping: " .. ping .. " ms")
+
+task.spawn(function()
+    while true do
+        ping = math.floor(game.Players.LocalPlayer:GetNetworkPing() * 1000 * 1.5)
+        EspTab:SetLabel(PingLabel, "Ping: " .. ping .. " ms")
+        task.wait(0.5)
+    end
+end)
+
+--// Main Controls
+local AutoTPButton
+AutoTPButton = EspTab:CreateButton({
+    Name = "Auto Soda TP (OFF)",
+    SectionParent = MainControls,
+    Callback = function()
+        getgenv().isAutoTPActive = not getgenv().isAutoTPActive
+        AutoTPButton:Set(getgenv().isAutoTPActive and "Auto Soda TP (ON)" or "Auto Soda TP (OFF)")
+        if getgenv().isAutoTPActive then
+            coroutine.wrap(function()
+                while getgenv().isAutoTPActive do
+                    teleportToNearestOrb()
+                end
+            end)()
+        end
+    end,
+})
+
+local RadiusSliderToggle = EspTab:CreateSlider({
+    Name = "Soda Teleport Radius",
+    Range = {0, 150},
+    Increment = 1,
+    Suffix = "Studs",
+    CurrentValue = getgenv().radius,
+    SectionParent = MainControls,
+    Flag = "TeleportRadiusSlider",
+    Callback = function(Value)
+        getgenv().radius = Value
+    end,
+})
+
+local RarityDropdown = EspTab:CreateDropdown({
+    Name = "Select Orb Rarities",
+    Options = {"Basic (Grey)", "Common (Blue)", "Uncommon (Purple)", "Rare (Red)", "Legendary (Yellow)", "Impossible (Green)"},
+    CurrentOption = {},
+    MultipleOptions = true,
+    SectionParent = AdvancedControls,
+    Flag = "OrbRarityDropdown",
+    Callback = function(Options)
+        getgenv().selectedRarities = Options
+    end,
+})
+local MainSection = EspTab:CreateSection("Advanced Soda Controls")
+
+local MaxAttemptsInput = EspTab:CreateInput({
+    Name = "Max Teleport Attempts",
+    CurrentValue = tostring(getgenv().MaxTeleportAttempts),
+    PlaceholderText = "Enter number of tries",
+    RemoveTextAfterFocusLost = true,
+    SectionParent = MainControls,
+    Flag = "MaxSodaTPTries",
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num and num > 0 then
+            getgenv().MaxTeleportAttempts = num
+        end
+    end,
+})
+
+local StatusNotificationToggle = EspTab:CreateToggle({
+    Name = "Enable Teleport Status Notification",
+    CurrentValue = getgenv().EnableStatusNotification,
+    SectionParent = MainControls,
+    Flag = "EnableStatusNotificationToggle",
+    Callback = function(Value)
+        getgenv().EnableStatusNotification = Value
+    end,
+})
+
+--// Advanced Orb Controls
+
+
+local RarityPriorityToggle = EspTab:CreateToggle({
+    Name = "Prioritize Rarity Over Distance",
+    CurrentValue = getgenv().PrioritizeRarity,
+    SectionParent = AdvancedControls,
+    Flag = "RarityPriorityToggle",
+    Callback = function(Value)
+        getgenv().PrioritizeRarity = Value
+    end,
+})
+
+--// Functions
+function teleportTo(position)
+    local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = CFrame.new(position)
+    end
+end
+
+function getRarityIndex(name)
+    local order = {
+        ["Basic (Grey)"] = 1,
+        ["Common (Blue)"] = 2,
+        ["Uncommon (Purple)"] = 3,
+        ["Rare (Red)"] = 4,
+        ["Legendary (Yellow)"] = 5,
+        ["Impossible (Green)"] = 6
+    }
+    return order[name] or 0
+end
+
+function teleportToNearestOrb()
+    local player = game.Players.LocalPlayer
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        task.wait(1)
+        return
+    end
+
+    local playerPosition = player.Character.HumanoidRootPart.Position
+    local bestOrb = nil
+    local bestScore = nil
+
+    for _, orb in pairs(workspace.Terrain:GetDescendants()) do
+        if orb:IsA("Model") and orb.Name == "OrbTemplate" and orb:FindFirstChild("Body") then
+            local orbTime = orb:GetAttribute("Time")
+            local orbPosition = orb.Body.Position
+            if orbTime and orbPosition then
+                for _, rarity in ipairs(getgenv().selectedRarities) do
+                    local range = getgenv().timeRanges[rarity]
+                    if range and orbTime >= range[1] and orbTime <= range[2] then
+                        local distance = (playerPosition - orbPosition).Magnitude
+                        if distance <= getgenv().radius then
+                            local rarityValue = getRarityIndex(rarity)
+                            local score = getgenv().PrioritizeRarity and -rarityValue or distance
+                            if not bestScore or score < bestScore then
+                                bestOrb = orb
+                                bestScore = score
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if bestOrb then
+        local targetPosition = bestOrb.Body.Position - Vector3.new(0, 1, 0)
+        local originalPosition = player.Character.HumanoidRootPart.Position
+
+        for attempt = 1, getgenv().MaxTeleportAttempts do
+            if not bestOrb or not bestOrb.Parent then break end
+
+            teleportTo(targetPosition)
+
+            if getgenv().EnableStatusNotification then
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Soda Teleport Status",
+                    Text = "Teleport Attempt #" .. attempt,
+                    Icon = "rbxassetid://12317605127",
+                    Duration = 1.5
+                })
+            end
+
+            local ping = player:GetNetworkPing() * 1000
+            local cp = ping * 1.5
+            local stayDuration
+
+            local distance = (player.Character.HumanoidRootPart.Position - bestOrb.Body.Position).Magnitude
+            if distance <= 23 then
+                stayDuration = 0.3
+            elseif distance <= 35 then
+                stayDuration = 0.017 + (cp / 1000)
+            else
+                stayDuration = 0.05 + (cp / 1000)
+            end
+
+            task.wait(stayDuration)
+            teleportTo(originalPosition)
+
+            local waitTime = math.clamp(1 - (ping / 1000), 0, 1)
+            task.wait(waitTime)
+        end
+
+        if bestOrb and bestOrb.Parent and getgenv().EnableStatusNotification then
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Soda Teleport Status",
+                Text = "Successfully Teleported to Soda.",
+                Icon = "rbxassetid://12317605127",
+                Duration = 1.5
+            })
+        end
+    else
+        task.wait(0.5)
+    end
+end
+
+local Button = EspTab:CreateButton({
+   Name = "Merge Sodas",
+   Callback = function()
+       local player = game.Players.LocalPlayer
+       local character = player.Character or player.CharacterAdded:Wait()
+       local humanoid = character:WaitForChild("Humanoid")
+       local rootPart = character:WaitForChild("HumanoidRootPart")
+
+       local originalCFrame = rootPart.CFrame
+
+       for _, tool in ipairs(player.Backpack:GetChildren()) do
+           if tool:IsA("Tool") then
+               humanoid:EquipTool(tool)
+               tool.Parent = workspace
+           end
+       end
+
+       rootPart.CFrame = rootPart.CFrame + rootPart.CFrame.LookVector * 5
+
+       task.delay(0.05, function()
+           rootPart.CFrame = originalCFrame
+       end)
+   end,
+})
+
+
+--// Soda Hitbox Expander Toggle
+getgenv().Enabled = false
+local Toggle = EspTab:CreateToggle({
+    Name = "Soda Expander Toggle",
+    CurrentValue = false,
+    Flag = "SodaExpanderToggle",
+    Callback = function(state)
+        getgenv().Enabled = state
+    end,
+})
+
+--// Soda Hitbox Expander Slider
+getgenv().Hitbox = 6
+local Slider = EspTab:CreateSlider({
+    Name = "Soda Hitbox Expander",
+    Range = {0, 8},
+    Increment = 0.1,
+    Suffix = "Studs",
+    CurrentValue = 6,
+    Flag = "SodaExpanderSlider",
+    Callback = function(value)
+        getgenv().Hitbox = value
+    end,
+})
+
+--// Expander Logic (Real-time)
+game:GetService("RunService").Heartbeat:Connect(function()
+    for _, v in ipairs(workspace.Terrain:GetDescendants()) do
+        if v.Name == "OrbTemplate" and v:FindFirstChild("Body") then
+            local size = getgenv().Enabled and getgenv().Hitbox or 1.5
+            v.Body.Size = Vector3.new(size, size, size)
+        end
+    end
+end)
+
+local Divider = EspTab:CreateDivider()
+","index":112}]
